@@ -1,0 +1,349 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymerfire/polymerfire.html">
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="user-card.html">
+
+<dom-module id="planningpoker-app">
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment">
+      :host {
+        display: block;
+      }
+
+      img.avatar {
+        border-radius: 50%;
+        min-width: 64px;
+        min-height: 64px;
+        width: 64px;
+        height: 64px;
+        display: inline-block;
+        margin-right: 0.25rem;
+      }
+
+      app-drawer {
+        z-index: 1;
+      }
+
+      app-toolbar {
+        background-color: rgb(81, 157, 233);
+        margin-bottom: 0.5rem;
+      }
+
+      app-toolbar,
+      app-toolbar paper-icon-button,
+      paper-button {
+        color: #fff;
+        text-shadow: 0px 1px 1px rgba(0,0,0,0.5);
+      }
+
+      paper-button {
+        margin: 0.5rem;
+        font-weight: 600;
+        background-color: rgb(81, 157, 233);
+      }
+
+      paper-button[disabled] {
+        background-color: #ccc;
+        text-shadow: none;
+        color: #888;
+        cursor: not-allowed;
+      }
+
+      .drawercontents {
+        padding: 0.5rem;
+      }
+
+      .name {
+        margin-left: 0.25rem;
+      }
+
+      .averages {
+        visibility: hidden;
+        height: 10vh;
+        border: solid 1px #ccc;
+      }
+
+      .averages > * {
+        padding: 0.5rem;
+      }
+
+      .averages > *:first-child {
+        border-right: solid 1px #ccc;
+      }
+
+      .averages > *:last-child {
+        border-left: solid 1px #ccc;
+      }
+
+      .averages strong { font-size: 250%; }
+
+      iron-icon[icon="check"] {
+        color: #090;
+      }
+
+      paper-icon-button {
+        color: #000;
+      }
+
+      #contents paper-icon-button {
+        color: #ccc;
+      }
+
+      #contents paper-icon-button.observer {
+        color: rgb(81, 157, 233);
+      }
+
+      .drawercontents {
+        height: 70vh;
+      }
+
+      .scorecontrols {
+        position: fixed;
+        bottom: 0;
+        height: 200px;
+        background-color: #fff;
+        border-top: solid 1px #ccc;
+      }
+
+      .user-list {
+        height: 40vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-bottom: solid 1px #ccc;
+      }
+
+      user-card {
+        /* border: solid 1px #ddd; */
+        display: inline-block;
+        height: 85px;
+        width: 85px;
+        margin: 0.25rem;
+      }
+
+    </style>
+
+    <firebase-app
+      auth-domain="planning-poker-ba60c.firebaseapp.com"
+      database-url="https://planning-poker-ba60c.firebaseio.com"
+      api-key="AIzaSyAKEZtCwIUsqafYpzcweF6ujwx72FK0Vkk"
+      storage-bucket=""
+      messaging-sender-id="1032999785576">
+    </firebase-app>
+
+    <firebase-auth id="auth" user="{{user}}" provider="google" status-known="{{statusKnown}}"></firebase-auth>
+    <firebase-query id="usersQuery" path="/users" data="{{users}}"></firebase-query>
+
+    <app-header>
+      <app-toolbar>
+        <paper-icon-button icon="menu" on-tap="openDrawer"></paper-icon-button>
+        <div main-title>Scoring Poker</div>
+      </app-toolbar>
+    </app-header>
+    <app-drawer id="drawer" swipe-open>
+      <app-toolbar>
+        <div main-title>Menu</div>
+      </app-toolbar>
+      <div class="drawercontents vertical layout center">
+        <div class="horizontal layout center" hidden="[[!user]]">
+          <img src="[[user.photoURL]]" class="avatar">
+          <small class="name">[[user.displayName]]</small>
+        </div>
+      </div>
+      <paper-button on-tap="signout" hidden="[[!user]]">Sign out</paper-button>
+    </app-drawer>
+
+    <div id="contents">
+
+      <div hidden="[[user]]">
+        <div class="vertical layout center">
+          <p>Log in to start scoring!</p>
+          <paper-button on-tap="signin">Sign in</paper-button>
+        </div>
+      </div>
+
+      <div hidden="[[!allset]]">
+        <div class="user-list">
+          <div class="horizontal layout wrap center center-center">
+            <template id="userList" is="dom-repeat" items="[[users]]" filter="_getSignedInUsers">
+              <user-card hide-score="[[hideScores]]" user="[[item]]" me="[[suser]]"></user-card>
+            </template>
+          </div>
+        </div>
+
+        <div class$="horizontal layout center center-center averages [[_computeVisibleClass(hideScores)]]">
+          <small>[[mode]]</small>
+          <strong>[[mean]]</strong>
+          <small>[[median]]</small>
+        </div>
+
+        <div class="scorecontrols">
+          <div class="horizontal layout center-center center wrap">
+            <paper-button disabled="[[observer]]" on-tap="send0">0</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send1">1</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send2">2</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send3">3</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send4">4</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send5">5</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send6">6</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send7">7</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send8">8</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send9">9</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="send10">10</paper-button>
+            <paper-button disabled="[[observer]]" on-tap="clearScore">&times;</paper-button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class PlanningpokerApp extends Polymer.Element {
+
+      static get is() { return 'planningpoker-app'; }
+
+      static get properties() {
+        return {
+          allset: {
+            type: Boolean,
+            computed: '_allSet(statusKnown, user, users)'
+          },
+          hideScores: {
+            type: Boolean,
+            notify: true,
+            value: () => false
+          }
+        };
+      }
+
+      static get observers() {
+        return [
+          '_usersChanged(users.*)',
+        ];
+      }
+
+      openDrawer() {
+        this.$.drawer.open();
+      }
+
+      async signin() {
+        let result = await this.$.auth.signInWithPopup();
+        await this.addToRoom(result.user);
+        window.location.reload();
+      }
+
+      async signout() {
+        if (this.$.auth.statusKnown && this.user) {
+          await this.removeFromRoom(this.user);
+          await this.$.auth.signOut();
+          window.location.reload();
+        }
+      }
+
+      no(...args) {
+        return args.every(a => a === undefined || a === null || a === false);
+      }
+
+      ready() {
+        super.ready();
+
+        // generate 'send' functions
+        for (let i = 0; i <= 10; i++) {
+          this[`send${i}`] = function() {
+            this.$.usersQuery.ref.child(this.user.uid).child('score').set(i);
+          };
+        }
+
+      }
+
+      addToRoom(user) {
+        this.$.usersQuery.ref.child(this.user.uid).child('inroom').set(true);
+        this.$.usersQuery.ref.child(this.user.uid).child('photourl').set(this.user.photoURL);
+        this.$.usersQuery.ref.child(this.user.uid).child('name').set(this.user.displayName);
+      }
+
+      removeFromRoom(user) {
+        this.$.usersQuery.ref.child(this.user.uid).child('inroom').set(false);
+        this.$.usersQuery.ref.child(this.user.uid).child('score').set(null);
+      }
+
+      clearScore(evt, detail) {
+        this.$.usersQuery.ref.child(this.user.uid).child('score').set(null);
+      }
+
+      _allSet(statusKnown, user, users) {
+        if (!statusKnown || !user || !users) return false;
+
+        let signedIn = users.filter(u => u.$key === user.uid && u.inroom).length > 0;
+
+        if (!signedIn) {
+          this.addToRoom(this.user);
+        }
+
+        return true;
+      }
+
+      _getSignedInUsers(user) {
+        return user.inroom;
+      }
+
+      _usersChanged(users) {
+        if (users.base.length === 0) return [];
+
+        this._calculateAverages(users.base);
+        this.suser = this.users.find(u => u.$key === this.user.uid);
+        this.observer = this.suser.observer;
+        this.$.userList.render();
+
+      }
+
+      _calculateAverages(users) {
+
+        let susers = users.filter(u => u.inroom && !u.observer);
+        let scores = susers.map(u => u.score).filter(s => !this.no(s));
+
+        this.hideScores = true;
+
+        if (scores.length == susers.length) {
+          let half = Math.floor(scores.length / 2);
+          this.mean = Math.round(scores.reduce((a, b) => a + b, 0) / susers.length);
+          this.mode = scores.slice().sort((a,b) => scores.filter(v => v === a).length - scores.filter(v => v === b).length).pop();
+          this.median = (scores.length % 2 === 0) ? scores[half] : (scores[half - 1] + scores[half]) / 2;
+          this.hideScores = false;
+          this.$.userList.render();
+        }
+
+      }
+
+      _computeVisibleClass(hideScores, user) {
+        return hideScores && (user && user.$key !== this.suser.$key) ? '' : 'visible';
+      }
+
+      toggleObserver(evt, detail) {
+        let user = evt.model.item;
+        if (!user) return;
+        this.$.usersQuery.ref.child(user.$key).child('observer').set(!user.observer);
+        this.$.usersQuery.ref.child(user.$key).child('score').set(null);
+      }
+
+    }
+
+    window.customElements.define(PlanningpokerApp.is, PlanningpokerApp);
+  </script>
+</dom-module>

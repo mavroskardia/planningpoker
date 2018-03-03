@@ -1,0 +1,29 @@
+<dom-module id="user-display">
+  <template>
+
+    <div class="horizontal layout center">
+      <img src="[[user.photoURL]]" class="avatar">
+      <small>[[user.displayName]]</small>
+    </div>
+
+    <script>
+      class UserDisplay extends Polymer.Element {
+
+        static get is() { return 'user-display'; }
+
+        static get properties() {
+          return {
+            user: {
+              type: Object,
+              readonly: true
+            }
+          };
+        }
+
+      }
+
+      window.customElements.define(UserDisplay.is, UserDisplay);
+
+    </script>
+  </template>
+</dom-module>

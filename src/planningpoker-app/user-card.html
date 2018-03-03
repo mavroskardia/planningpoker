@@ -1,0 +1,99 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<dom-module id="user-card">
+  <template>
+    <style is="custom-style" include="iron-flex iron-flex-alignment">
+
+      .contents {
+        padding: 0.25rem;
+        color: #444;
+        position: relative;
+      }
+
+      img.avatar {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        display: block;
+      }
+
+      strong {
+        visibility: hidden;
+      }
+
+      .visible {
+        visibility: visible;
+      }
+
+      .observer {
+        background-color: #eee;
+      }
+
+      paper-icon-button {
+        position: absolute;
+        right: -0.5rem;
+        top: -0.5rem;
+      }
+
+    </style>
+
+    <div class$="contents vertical layout center [[_getClassIf(user.observer, 'observer')]]">
+      <img class="small avatar" src="[[user.photourl]]">
+      <small class="name">[[_getShortName(user.name)]]</small>
+      <iron-icon slot="item-icon" icon="check" hidden="[[no(user.score)]]"></iron-icon>
+      <strong class$="[[_computeVisibleClass(user)]]">[[user.score]]</strong>
+      <paper-icon-button
+        icon="[[_getIcon(user.observer)]]"
+        hidden="[[_notMe(user)]]"
+        on-tap="toggleObserver">
+      </paper-icon-button>
+    </div>
+
+  </template>
+
+  <script>
+
+    class UserCard extends Polymer.Element {
+
+      static get is() { return 'user-card' }
+
+      no(...args) {
+        return args.every(a => a === undefined || a === null || a === false);
+      }
+
+      _computeVisibleClass(user) {
+        console.log(`visible score? hide scores: ${this.hideScore} not me?: ${this._notMe(user)}`);
+        return this.hideScore && this._notMe(user) ? '' : 'visible';
+      }
+
+      _getClassIf(condition, cssclass) {
+        return condition ? cssclass : '';
+      }
+
+      _getIcon(observer) {
+        return observer ? 'visibility' : 'visibility-off';
+      }
+
+      toggleObserver(evt, detail) {
+        if (!this.user) return;
+        this.$.usersQuery.ref.child(user.$key).child('observer').set(!user.observer);
+        this.$.usersQuery.ref.child(user.$key).child('score').set(null);
+      }
+
+      _notMe(user) {
+        return user && user.$key !== this.me.$key;
+      }
+
+      _getShortName(name) {
+        return name.split(' ')[0];
+      }
+
+    }
+
+    window.customElements.define(UserCard.is, UserCard);
+
+  </script>
+</dom-module>

@@ -1,0 +1,8 @@
+{
+  "name": "Planning Poker",
+  "short_name": "PP",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#519de9",
+  "theme_color": "#519de9"
+}
