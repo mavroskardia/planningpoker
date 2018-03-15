@@ -54,11 +54,11 @@
       <small class="name">[[_getShortName(user.name)]]</small>
       <iron-icon slot="item-icon" icon="check" hidden="[[no(user.score)]]"></iron-icon>
       <strong class$="[[_shouldHideScore(hideScore, user)]]">[[user.score]]</strong>
-      <paper-icon-button
+      <!-- <paper-icon-button
         icon="[[_getIcon(user.observer)]]"
         hidden="[[_notMe(user)]]"
         on-tap="toggleObserver">
-      </paper-icon-button>
+      </paper-icon-button> -->
     </div>
 
   </template>
@@ -96,6 +96,10 @@
 
       _getShortName(name) {
         return name.split(' ')[0];
+      }
+
+      fireSelected(evt, detail) {
+        console.log('firing selected');
       }
 
     }
