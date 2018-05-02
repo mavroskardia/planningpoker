@@ -32,7 +32,7 @@
       }
 
       app-drawer {
-        z-index: 1;
+        z-index: 2;
       }
 
       app-toolbar {
@@ -99,8 +99,8 @@
 
       .scorecontrols {
         position: fixed;
+        z-index: 1;
         bottom: 0;
-        height: 230px;
         background-color: #fff;
         border-top: solid 1px #ccc;
       }
@@ -109,7 +109,6 @@
         height: 40vh;
         overflow-y: auto;
         overflow-x: hidden;
-        border-bottom: solid 1px #ccc;
       }
 
       user-card {
@@ -117,7 +116,7 @@
         display: inline-block;
         height: 85px;
         width: 85px;
-        margin: 0.15rem;
+        /* margin: 0.15rem; */
       }
 
       .action-bar {
@@ -195,16 +194,15 @@
           </div>
         </div>
 
-        <div class$="averages [[_computeVisibleClass(hideScores)]]">
-          <div class$="horizontal layout center center-center">
-            <small>[[mode]]</small>
-            <strong>[[mean]]</strong>
-            <small>[[median]]</small>
-          </div>
-        </div>
-
         <div class="scorecontrols">
-          <div class="horizontal layout center-center center wrap">
+          <div class$="averages [[_computeVisibleClass(hideScores)]]">
+            <div class$="horizontal layout center center-center">
+              <small>[[mode]]</small>
+              <strong>[[mean]]</strong>
+              <small>[[median]]</small>
+            </div>
+          </div>
+            <div class="horizontal layout center-center center wrap">
             <paper-button disabled="[[observer]]" on-tap="send0">0</paper-button>
             <paper-button disabled="[[observer]]" on-tap="send1">1</paper-button>
             <paper-button disabled="[[observer]]" on-tap="send2">2</paper-button>
