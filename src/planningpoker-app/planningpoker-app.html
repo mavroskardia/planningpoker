@@ -18,6 +18,7 @@
     <style is="custom-style" include="iron-flex iron-flex-alignment">
       :host {
         display: block;
+        font-family: "Roboto", "Noto Sans", sans-serif;
       }
 
       img.avatar {
@@ -69,26 +70,19 @@
 
       .averages {
         visibility: hidden;
-        height: 10vh;
+        /* height: 10vh; */
+        text-align: center;
+        color: #888;
+        border-bottom: solid 1px #ccc;
+      }
+
+      .averages strong {
+        font-size: 250%;
         border: solid 1px #ccc;
-      }
-
-      .averages > * {
-        padding: 0.5rem;
-      }
-
-      .averages > *:first-child {
-        border-right: solid 1px #ccc;
-      }
-
-      .averages > *:last-child {
-        border-left: solid 1px #ccc;
-      }
-
-      .averages strong { font-size: 250%; }
-
-      iron-icon[icon="check"] {
-        color: #090;
+        border-top: none;
+        border-bottom: none;
+        padding: 0 0.5rem;
+        color: #444;
       }
 
       paper-icon-button {
@@ -97,10 +91,6 @@
 
       #contents paper-icon-button {
         color: #ccc;
-      }
-
-      #contents paper-icon-button.observer {
-        color: rgb(81, 157, 233);
       }
 
       .drawercontents {
@@ -127,8 +117,28 @@
         display: inline-block;
         height: 85px;
         width: 85px;
-        margin: 0.25rem;
+        margin: 0.15rem;
       }
+
+      .action-bar {
+        color: #fff;
+        font-weight: 600;
+        font-size: 80%;
+        position: fixed;
+        bottom: 0;
+        height: 64px;
+        width: 100vw;
+        z-index: 2;
+        border-top: solid 1px #09f;
+        background-color: rgba(0,0,0,0.75);
+      }
+
+      .action-bar paper-button {
+        margin: 0 0.5rem;
+      }
+
+      .visible { visibility: visible; }
+      .invisible { visibility: hidden; }
 
     </style>
 
@@ -159,7 +169,7 @@
           <small class="name">[[user.displayName]]</small>
         </div>
       </div>
-      <paper-button on-tap="signout" hidden="[[!user]]">Sign out</paper-button>
+      <paper-button on-click="signout" hidden="[[!user]]">Sign out</paper-button>
     </app-drawer>
 
     <div id="contents">
@@ -167,7 +177,7 @@
       <div hidden="[[user]]">
         <div class="vertical layout center">
           <p>Log in to start scoring!</p>
-          <paper-button on-tap="signin">Sign in</paper-button>
+          <paper-button on-click="signin">Sign in</paper-button>
         </div>
       </div>
 
@@ -175,15 +185,22 @@
         <div class="user-list">
           <div class="horizontal layout wrap center center-center">
             <template id="userList" is="dom-repeat" items="[[users]]" filter="_getSignedInUsers">
-              <user-card hide-score="[[hideScores]]" user="[[item]]" me="[[suser]]"></user-card>
+              <user-card
+                hide-score="[[hideScores]]"
+                user="[[item]]"
+                me="[[suser]]"
+                on-click="toggleActions">
+              </user-card>
             </template>
           </div>
         </div>
 
-        <div class$="horizontal layout center center-center averages [[_computeVisibleClass(hideScores)]]">
-          <small>[[mode]]</small>
-          <strong>[[mean]]</strong>
-          <small>[[median]]</small>
+        <div class$="averages [[_computeVisibleClass(hideScores)]]">
+          <div class$="horizontal layout center center-center">
+            <small>[[mode]]</small>
+            <strong>[[mean]]</strong>
+            <small>[[median]]</small>
+          </div>
         </div>
 
         <div class="scorecontrols">
@@ -203,6 +220,13 @@
           </div>
         </div>
 
+      </div>
+
+      <div hidden="[[!showActions]]">
+        <div class="action-bar horizontal layout center center-center">
+          <paper-button on-click="toggleObserver" hidden="[[!_same(suser, selectedUser)]]">Observe</paper-button>
+          <paper-button on-click="kickUser" hidden="[[_same(suser, selectedUser)]]">Kick</paper-button>
+        </div>
       </div>
 
     </div>
@@ -228,6 +252,14 @@
             type: Boolean,
             notify: true,
             value: () => false
+          },
+          selectedUser: {
+            type: Object,
+            value: () => undefined
+          },
+          showActions: {
+            type: Boolean,
+            value: () => false
           }
         };
       }
@@ -236,6 +268,10 @@
         return [
           '_usersChanged(users.*)',
         ];
+      }
+
+      _same(user1, user2) {
+        return (user1 && user2) && user1.$key === user2.$key;
       }
 
       openDrawer() {
@@ -269,7 +305,6 @@
             this.$.usersQuery.ref.child(this.user.uid).child('score').set(i);
           };
         }
-
       }
 
       addToRoom(user) {
@@ -296,6 +331,8 @@
           this.addToRoom(this.user);
         }
 
+        this.selectedUser = undefined;
+
         return true;
       }
 
@@ -308,7 +345,6 @@
 
         this._calculateAverages(users.base);
         this.suser = this.users.find(u => u.$key === this.user.uid);
-        this.observer = this.suser.observer;
         this.$.userList.render();
 
       }
@@ -326,20 +362,28 @@
           this.mode = scores.slice().sort((a,b) => scores.filter(v => v === a).length - scores.filter(v => v === b).length).pop();
           this.median = (scores.length % 2 === 0) ? scores[half] : (scores[half - 1] + scores[half]) / 2;
           this.hideScores = false;
-          this.$.userList.render();
         }
 
       }
 
-      _computeVisibleClass(hideScores, user) {
-        return hideScores && (user && user.$key !== this.suser.$key) ? '' : 'visible';
+      _computeVisibleClass(hideScores) {
+        return hideScores ? 'invisible' : 'visible';
       }
 
       toggleObserver(evt, detail) {
-        let user = evt.model.item;
-        if (!user) return;
-        this.$.usersQuery.ref.child(user.$key).child('observer').set(!user.observer);
-        this.$.usersQuery.ref.child(user.$key).child('score').set(null);
+        this.$.usersQuery.ref.child(this.selectedUser.$key).child('observer').set(!this.selectedUser.observer);
+        this.$.usersQuery.ref.child(this.selectedUser.$key).child('score').set(null);
+      }
+
+      async kickUser(evt, detail) {
+        await this.$.usersQuery.ref.child(this.selectedUser.$key).child('inroom').set(false);
+        window.location.reload();
+      }
+
+      toggleActions(evt, detail) {
+        let nuser = evt.currentTarget.user;
+        this.selectedUser = nuser == this.selectedUser ? undefined : nuser;
+        this.showActions = !!this.selectedUser;
       }
 
     }

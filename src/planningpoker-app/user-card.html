@@ -12,6 +12,7 @@
         padding: 0.25rem;
         color: #444;
         position: relative;
+        font-family: "Roboto", "Noto Sans", sans-serif;
       }
 
       img.avatar {
@@ -30,6 +31,7 @@
 
       .observer {
         background-color: #eee;
+        border-radius: 5px;
       }
 
       paper-icon-button {
@@ -38,18 +40,25 @@
         top: -0.5rem;
       }
 
+      iron-icon {
+        position: absolute;
+        left: 0.25rem;
+        top: 0;
+        color: #090;
+      }
+
     </style>
 
     <div class$="contents vertical layout center [[_getClassIf(user.observer, 'observer')]]">
       <img class="small avatar" src="[[user.photourl]]">
       <small class="name">[[_getShortName(user.name)]]</small>
       <iron-icon slot="item-icon" icon="check" hidden="[[no(user.score)]]"></iron-icon>
-      <strong class$="[[_computeVisibleClass(user)]]">[[user.score]]</strong>
-      <paper-icon-button
+      <strong class$="[[_shouldHideScore(hideScore, user)]]">[[user.score]]</strong>
+      <!-- <paper-icon-button
         icon="[[_getIcon(user.observer)]]"
         hidden="[[_notMe(user)]]"
         on-tap="toggleObserver">
-      </paper-icon-button>
+      </paper-icon-button> -->
     </div>
 
   </template>
@@ -64,9 +73,8 @@
         return args.every(a => a === undefined || a === null || a === false);
       }
 
-      _computeVisibleClass(user) {
-        console.log(`visible score? hide scores: ${this.hideScore} not me?: ${this._notMe(user)}`);
-        return this.hideScore && this._notMe(user) ? '' : 'visible';
+      _shouldHideScore(hideScore, user) {
+        return hideScore  && user && user.$key !== this.me.$key ? '' : 'visible';
       }
 
       _getClassIf(condition, cssclass) {
@@ -79,8 +87,7 @@
 
       toggleObserver(evt, detail) {
         if (!this.user) return;
-        this.$.usersQuery.ref.child(user.$key).child('observer').set(!user.observer);
-        this.$.usersQuery.ref.child(user.$key).child('score').set(null);
+        this.dispatchEvent(new CustomEvent('observer-toggled', {detail: {user: this.user}}));
       }
 
       _notMe(user) {
@@ -89,6 +96,10 @@
 
       _getShortName(name) {
         return name.split(' ')[0];
+      }
+
+      fireSelected(evt, detail) {
+        console.log('firing selected');
       }
 
     }
